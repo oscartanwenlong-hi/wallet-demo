@@ -7,140 +7,133 @@
 
     <!-- Firebase SDK -->
     <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
-import { getFirestore, doc, getDoc, updateDoc, query, where, getDocs, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
+        import { getFirestore, doc, getDoc, updateDoc, query, where, getDocs, collection } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js";
 
-const firebaseConfig = {
-    apiKey: "AIzaSyB-sxwqPjcQp2kR3fubkhw7xg8m2FztgcA",
-    authDomain: "wallet-demo-74c8b.firebaseapp.com",
-    projectId: "wallet-demo-74c8b",
-    storageBucket: "wallet-demo-74c8b.firebasestorage.app",
-    messagingSenderId: "727957421920",
-    appId: "1:727957421920:web:b5bff9853e2e8510db2805"
-};
+        const firebaseConfig = {
+            apiKey: "AIzaSyB-sxwqPjcQp2kR3fubkhw7xg8m2FztgcA",
+            authDomain: "wallet-demo-74c8b.firebaseapp.com",
+            projectId: "wallet-demo-74c8b",
+            storageBucket: "wallet-demo-74c8b.firebasestorage.app",
+            messagingSenderId: "727957421920",
+            appId: "1:727957421920:web:b5bff9853e2e8510db2805"
+        };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
 
-let currentUser = null;
+        let currentUser = null;
 
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        currentUser = user;
-        document.getElementById("userEmail").innerText = `当前用户: ${user.email}`;
-        
-        const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
-        
-        if (userSnap.exists()) {
-            document.getElementById("userFunds").innerText = `余额: $${userSnap.data().Funds.toFixed(2)}`;
-        }
-    } else {
-        alert("请先登录！");
-        window.location.href = "index.html";
-    }
-});
-
-async function transferMoney() {
-    if (!currentUser) {
-        alert("请先登录！");
-        return;
-    }
-
-    const senderUID = currentUser.uid;
-    const recipientEmail = document.getElementById("recipientEmail").value.trim();
-    const amount = parseFloat(document.getElementById("amount").value);
-
-    if (!recipientEmail || isNaN(amount) || amount <= 0) {
-        alert("请输入有效的收款人邮箱和金额！");
-        return;
-    }
-
-    try {
-        const usersRef = collection(db, "users");
-        const recipientQuery = query(usersRef, where("Email", "==", recipientEmail));
-        const recipientSnap = await getDocs(recipientQuery);
-
-        if (recipientSnap.empty) {
-            alert("收款人未找到！");
-            return;
-        }
-
-        let recipientUID;
-        let recipientData;
-
-        recipientSnap.forEach(doc => {
-            recipientUID = doc.id;
-            recipientData = doc.data();
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById("userEmail").innerText = `当前用户: ${user.email}`;
+                
+                const userRef = doc(db, "users", user.uid);
+                const userSnap = await getDoc(userRef);
+                
+                if (userSnap.exists()) {
+                    document.getElementById("userFunds").innerText = `余额: $${userSnap.data().Funds.toFixed(2)}`;
+                }
+            } else {
+                alert("请先登录！");
+                window.location.href = "index.html";
+            }
         });
 
-        if (!recipientUID) {
-            alert("收款人数据错误！");
-            return;
+        async function transferMoney() {
+            if (!currentUser) {
+                alert("请先登录！");
+                return;
+            }
+
+            const senderUID = currentUser.uid;
+            const recipientEmail = document.getElementById("recipientEmail").value.trim();
+            const amount = parseFloat(document.getElementById("amount").value);
+
+            if (!recipientEmail || isNaN(amount) || amount <= 0) {
+                alert("请输入有效的收款人邮箱和金额！");
+                return;
+            }
+
+            try {
+                const usersRef = collection(db, "users");
+                const recipientQuery = query(usersRef, where("Email", "==", recipientEmail));
+                const recipientSnap = await getDocs(recipientQuery);
+
+                if (recipientSnap.empty) {
+                    alert("收款人未找到！");
+                    return;
+                }
+
+                let recipientUID;
+                let recipientData;
+
+                recipientSnap.forEach(doc => {
+                    recipientUID = doc.id;
+                    recipientData = doc.data();
+                });
+
+                if (!recipientUID) {
+                    alert("收款人数据错误！");
+                    return;
+                }
+
+                const senderRef = doc(db, "users", senderUID);
+                const senderSnap = await getDoc(senderRef);
+
+                if (!senderSnap.exists()) {
+                    alert("当前用户数据未找到！");
+                    return;
+                }
+
+                const senderData = senderSnap.data();
+
+                if (senderData.Funds < amount) {
+                    alert("余额不足！");
+                    return;
+                }
+
+                // 显示弹出框确认转账信息
+                document.getElementById("confirmationRecipient").innerText = recipientData.name;
+                document.getElementById("confirmationEmail").innerText = recipientEmail;
+                document.getElementById("confirmationAmount").innerText = `$${amount.toFixed(2)}`;
+
+                document.getElementById("confirmationModal").style.display = "block";
+
+                // 处理确认按钮
+                document.getElementById("confirmTransfer").addEventListener("click", async () => {
+                    await updateDoc(senderRef, {
+                        Funds: senderData.Funds - amount
+                    });
+
+                    await updateDoc(doc(db, "users", recipientUID), {
+                        Funds: recipientData.Funds + amount
+                    });
+
+                    alert(`成功转账 $${amount} 给 ${recipientEmail}！`);
+                    window.location.href = "dashboard.html";
+                });
+
+                // 关闭弹出框
+                document.getElementById("cancelTransfer").addEventListener("click", () => {
+                    document.getElementById("confirmationModal").style.display = "none";
+                });
+
+            } catch (error) {
+                console.error("转账失败：", error);
+                alert("转账失败：" + error.message);
+            }
         }
 
-        const senderRef = doc(db, "users", senderUID);
-        const senderSnap = await getDoc(senderRef);
-
-        if (!senderSnap.exists()) {
-            alert("当前用户数据未找到！");
-            return;
-        }
-
-        const senderData = senderSnap.data();
-
-        if (senderData.Funds < amount) {
-            alert("余额不足！");
-            return;
-        }
-
-        // 显示弹出框确认转账信息
-        document.getElementById("confirmationRecipient").innerText = recipientData.name || "未知";
-        document.getElementById("confirmationEmail").innerText = recipientEmail;
-        document.getElementById("confirmationAmount").innerText = `$${amount.toFixed(2)}`;
-
-        document.getElementById("confirmationModal").style.display = "block";
-
-        document.getElementById("confirmTransfer").addEventListener("click", async () => {
-            await updateDoc(senderRef, {
-                Funds: senderData.Funds - amount
+        window.onload = () => {
+            document.getElementById("transferBtn").addEventListener("click", transferMoney);
+            document.getElementById("backToDashboard").addEventListener("click", () => {
+                window.location.href = "dashboard.html";
             });
-
-            await updateDoc(doc(db, "users", recipientUID), {
-                Funds: recipientData.Funds + amount
-            });
-
-            // 记录交易
-            await addDoc(collection(db, "transactions"), {
-                sender: currentUser.email,
-                recipient: recipientEmail,
-                amount: amount,
-                timestamp: new Date()
-            });
-
-            alert(`成功转账 $${amount} 给 ${recipientEmail}！`);
-            window.location.href = "dashboard.html";
-        });
-
-        document.getElementById("cancelTransfer").addEventListener("click", () => {
-            document.getElementById("confirmationModal").style.display = "none";
-        });
-
-    } catch (error) {
-        console.error("转账失败：", error);
-        alert("转账失败：" + error.message);
-    }
-}
-
-window.onload = () => {
-    document.getElementById("transferBtn").addEventListener("click", transferMoney);
-    document.getElementById("backToDashboard").addEventListener("click", () => {
-        window.location.href = "dashboard.html";
-    });
-};
-
+        };
     </script>
 
     <!-- 🌈 现代化 CSS 设计 -->
