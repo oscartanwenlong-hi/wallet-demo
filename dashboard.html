@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户主页</title>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
+        import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB-sxwqPjcQp2kR3fubkhw7xg8m2FztgcA",
+            authDomain: "wallet-demo-74c8b.firebaseapp.com",
+            projectId: "wallet-demo-74c8b",
+            storageBucket: "wallet-demo-74c8b.firebasestorage.app",
+            messagingSenderId: "727957421920",
+            appId: "1:727957421920:web:b5bff9853e2e8510db2805"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        document.addEventListener("DOMContentLoaded", () => {
+            // 🔹 获取 URL 里的用户 email
+            const urlParams = new URLSearchParams(window.location.search);
+            const userEmail = urlParams.get("email");
+
+            if (userEmail) {
+                document.getElementById("userEmail").textContent = `欢迎, ${userEmail}`;
+            } else {
+                document.getElementById("userEmail").textContent = "未找到用户信息";
+            }
+
+            // 退出登录按钮
+            document.getElementById("logoutButton").addEventListener("click", () => {
+                signOut(auth).then(() => {
+                    window.location.href = "index.html"; // 退出后跳回登录页
+                }).catch((error) => {
+                    alert("❌ 退出失败：" + error.message);
+                });
+            });
+        });
+    </script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h2>用户主页</h2>
+    <p id="userEmail">正在加载用户信息...</p>
+    <button id="logoutButton">退出登录</button>
+</body>
+</html>
