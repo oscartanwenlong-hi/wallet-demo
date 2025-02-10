@@ -1,105 +1,187 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录页面</title>
+    <style>
+        /* 样式简化，设计一个简洁的登录界面 */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyB-sxwqPjcQp2kR3fubkhw7xg8m2FztgcA",
-  authDomain: "wallet-demo-74c8b.firebaseapp.com",
-  projectId: "wallet-demo-74c8b",
-  storageBucket: "wallet-demo-74c8b.firebasestorage.app",
-  messagingSenderId: "727957421920",
-  appId: "1:727957421920:web:b5bff9853e2e8510db2805"
-};
+        .login-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            text-align: center;
+        }
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth();
-const db = getFirestore();
+        h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
 
-// 获取设备唯一标识符
-function generateDeviceID() {
-  return localStorage.getItem("deviceID") || generateUUID();
-}
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
 
-function generateUUID() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    var r = Math.random() * 16 | 0,
-      v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-}
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
 
-// 登录表单提交
-document.getElementById("loginForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            cursor: pointer;
+        }
 
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+        button:hover {
+            background-color: #218838;
+        }
 
-  try {
-    await login(email, password);
-  } catch (error) {
-    document.getElementById("errorMessage").textContent = error.message;
-  }
-});
+        .error-message {
+            color: red;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>登录</h2>
+        <form id="loginForm">
+            <label for="email">邮箱：</label>
+            <input type="email" id="email" required>
+            <label for="password">密码：</label>
+            <input type="password" id="password" required>
+            <button type="submit">登录</button>
+        </form>
+        <p id="errorMessage" class="error-message"></p>
+    </div>
 
-// 用户登录逻辑
-async function login(email, password) {
-  const deviceID = generateDeviceID();
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.3.0/firebase-firestore.js"></script>
+    <script>
+        // Firebase 配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyB-sxwqPjcQp2kR3fubkhw7xg8m2FztgcA",
+            authDomain: "wallet-demo-74c8b.firebaseapp.com",
+            projectId: "wallet-demo-74c8b",
+            storageBucket: "wallet-demo-74c8b.appspot.com",
+            messagingSenderId: "727957421920",
+            appId: "1:727957421920:web:b5bff9853e2e8510db2805"
+        };
 
-  try {
-    // 用户登录
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
+        // 初始化 Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
 
-    const userRef = doc(db, "users", user.uid);
-    const userSnap = await getDoc(userRef);
+        // 获取设备唯一标识符
+        function generateDeviceID() {
+            return localStorage.getItem("deviceID") || generateUUID();
+        }
 
-    if (!userSnap.exists()) {
-      throw new Error("用户不存在");
-    }
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0,
+                    v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
 
-    const userData = userSnap.data();
+        // 登录表单提交
+        document.getElementById("loginForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
 
-    // 如果设备ID不同，强制登出旧设备
-    if (userData.deviceID && userData.deviceID !== deviceID) {
-      await forceLogoutOldDevice(userData.deviceID);
-    }
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
 
-    // 更新为新设备的deviceID
-    await updateDoc(userRef, {
-      deviceID: deviceID
-    });
+            try {
+                await login(email, password);
+            } catch (error) {
+                document.getElementById("errorMessage").textContent = error.message;
+            }
+        });
 
-    alert("登录成功！");
-    window.location.href = "dashboard.html";  // 跳转到主页面
+        // 用户登录逻辑
+        async function login(email, password) {
+            const deviceID = generateDeviceID();
 
-  } catch (error) {
-    throw new Error(error.message);
-  }
-}
+            try {
+                // 用户登录
+                const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+                const user = userCredential.user;
 
-// 强制登出旧设备
-async function forceLogoutOldDevice(oldDeviceID) {
-  console.log(`旧设备ID ${oldDeviceID} 将被登出。`);
+                const userRef = db.collection("users").doc(user.uid);
+                const userSnap = await userRef.get();
 
-  const user = auth.currentUser;
-  if (user) {
-    const userRef = doc(db, "users", user.uid);
-    await updateDoc(userRef, {
-      deviceID: null  // 清除设备ID，旧设备会被强制退出
-    });
-  }
+                if (!userSnap.exists) {
+                    throw new Error("用户不存在");
+                }
 
-  await signOut(auth);  // 退出当前设备
-  alert("您已在其他设备登录，请退出旧设备后继续。");
-  window.location.href = "index.html";  // 跳转到登录页面
-}
+                const userData = userSnap.data();
 
-// 在首次登录时生成并存储设备ID
-if (!localStorage.getItem("deviceID")) {
-  const deviceID = generateUUID();
-  localStorage.setItem("deviceID", deviceID);
-}
+                // 如果设备ID不同，强制登出旧设备
+                if (userData.deviceID && userData.deviceID !== deviceID) {
+                    await forceLogoutOldDevice(userData.deviceID);
+                }
+
+                // 更新为新设备的deviceID
+                await userRef.update({
+                    deviceID: deviceID
+                });
+
+                alert("登录成功！");
+                window.location.href = "dashboard.html";  // 跳转到主页面
+
+            } catch (error) {
+                throw new Error(error.message);
+            }
+        }
+
+        // 强制登出旧设备
+        async function forceLogoutOldDevice(oldDeviceID) {
+            console.log(`旧设备ID ${oldDeviceID} 将被登出。`);
+
+            const user = auth.currentUser;
+            if (user) {
+                const userRef = db.collection("users").doc(user.uid);
+                await userRef.update({
+                    deviceID: null  // 清除设备ID，旧设备会被强制退出
+                });
+            }
+
+            await auth.signOut();  // 退出当前设备
+            alert("您已在其他设备登录，请退出旧设备后继续。");
+            window.location.href = "index.html";  // 跳转到登录页面
+        }
+
+        // 在首次登录时生成并存储设备ID
+        if (!localStorage.getItem("deviceID")) {
+            const deviceID = generateUUID();
+            localStorage.setItem("deviceID", deviceID);
+        }
+    </script>
+</body>
+</html>
