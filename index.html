@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>电子邮件登录演示</title>
     <script type="module">
-        // 导入 Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js";
 
-        // 🔹 你的 Firebase 配置
         const firebaseConfig = {
             apiKey: "AIzaSyB-sxwqPjcQp2kR3fubkhw7xg8m2FztgcA",
             authDomain: "wallet-demo-74c8b.firebaseapp.com",
@@ -19,22 +17,19 @@
             appId: "1:727957421920:web:b5bff9853e2e8510db2805"
         };
 
-        // 初始化 Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
-        // 登录逻辑
         document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("loginButton").addEventListener("click", function() {
                 const email = document.getElementById("email").value;
                 const password = document.getElementById("password").value;
 
-                // 使用 email 和 password 登录
                 signInWithEmailAndPassword(auth, email, password)
                     .then((userCredential) => {
                         const user = userCredential.user;
-                        document.getElementById("message").textContent = `✅ 登录成功！欢迎, ${user.email}`;
-                        document.getElementById("message").style.color = "green";
+                        // ✅ 登录成功后，跳转到 dashboard.html，并传递用户信息
+                        window.location.href = `dashboard.html?email=${encodeURIComponent(user.email)}`;
                     })
                     .catch((error) => {
                         document.getElementById("message").textContent = `❌ 登录失败: ${error.message}`;
@@ -44,38 +39,18 @@
         });
     </script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 50px;
-        }
-        input {
-            padding: 10px;
-            margin: 10px;
-            font-size: 16px;
-            width: 80%;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        #message {
-            margin-top: 20px;
-            font-size: 18px;
-            color: red;
-        }
+        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+        input { padding: 10px; margin: 10px; font-size: 16px; width: 80%; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+        #message { margin-top: 20px; font-size: 18px; color: red; }
     </style>
 </head>
 <body>
-
     <h2>使用电子邮件和密码登录</h2>
-    
     <input type="email" id="email" placeholder="请输入电子邮件" required>
     <input type="password" id="password" placeholder="请输入密码" required>
     <br>
     <button id="loginButton">登录</button>
     <p id="message"></p>
-
 </body>
 </html>
