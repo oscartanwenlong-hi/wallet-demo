@@ -6,7 +6,8 @@
     <title>用户主页</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
-        import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB-sxwqPjcQp2kR3fubkhw7xg8m2FztgcA",
@@ -19,22 +20,36 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
 
         document.addEventListener("DOMContentLoaded", () => {
-            // 🔹 获取 URL 里的用户 email
-            const urlParams = new URLSearchParams(window.location.search);
-            const userEmail = urlParams.get("email");
+            // 监听用户是否登录
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    const userId = user.uid;
+                    document.getElementById("userId").textContent = `UID: ${userId}`;
 
-            if (userEmail) {
-                document.getElementById("userEmail").textContent = `欢迎, ${userEmail}`;
-            } else {
-                document.getElementById("userEmail").textContent = "未找到用户信息";
-            }
+                    // 获取 Firestore 用户数据
+                    const userRef = doc(db, "users", userId);
+                    const userSnap = await getDoc(userRef);
 
-            // 退出登录按钮
+                    if (userSnap.exists()) {
+                        const userData = userSnap.data();
+                        document.getElementById("userName").textContent = `欢迎, ${userData.name}`;
+                        document.getElementById("userFunds").textContent = `余额: $${userData.Funds}`;
+                    } else {
+                        document.getElementById("userName").textContent = "用户数据未找到";
+                        document.getElementById("userFunds").textContent = "";
+                    }
+                } else {
+                    window.location.href = "index.html"; // 未登录，跳转回登录页面
+                }
+            });
+
+            // 退出登录
             document.getElementById("logoutButton").addEventListener("click", () => {
                 signOut(auth).then(() => {
-                    window.location.href = "index.html"; // 退出后跳回登录页
+                    window.location.href = "index.html";
                 }).catch((error) => {
                     alert("❌ 退出失败：" + error.message);
                 });
@@ -48,7 +63,9 @@
 </head>
 <body>
     <h2>用户主页</h2>
-    <p id="userEmail">正在加载用户信息...</p>
+    <p id="userId">正在获取 UID...</p>
+    <p id="userName">正在加载用户信息...</p>
+    <p id="userFunds"></p>
     <button id="logoutButton">退出登录</button>
 </body>
 </html>
