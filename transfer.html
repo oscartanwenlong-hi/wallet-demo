@@ -1,15 +1,16 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>转账页面</title>
+    <title>转账 - Wallet Demo</title>
     <script type="module">
-        // Firebase 配置
+        // **Firebase SDK**
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
+        import { getFirestore, doc, getDoc, updateDoc, query, where, getDocs, collection } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-firestore.js";
 
+        // **Firebase 配置**
         const firebaseConfig = {
             apiKey: "AIzaSyB-sxwqPjcQp2kR3fubkhw7xg8m2FztgcA",
             authDomain: "wallet-demo-74c8b.firebaseapp.com",
@@ -19,105 +20,130 @@
             appId: "1:727957421920:web:b5bff9853e2e8510db2805"
         };
 
-        // 初始化 Firebase
+        // **初始化 Firebase**
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth();
-        const db = getFirestore();
+        const db = getFirestore(app);
+        const auth = getAuth(app);
 
-        let currentUser = null; // 存储当前用户信息
+        let currentUser = null;
 
-        // 监听用户是否登录
-        onAuthStateChanged(auth, async (user) => {
+        // **检查用户是否已登录**
+        onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
-                document.getElementById("user-email").innerText = `当前用户: ${user.email}`;
+                document.getElementById("userEmail").innerText = `当前用户: ${user.email}`;
             } else {
-                window.location.href = "index.html"; // 未登录就跳回登录页面
+                alert("请先登录！");
+                window.location.href = "login.html"; // 跳转到登录页
             }
         });
 
-        // **💰 转账功能**
+        // **转账函数**
         async function transferMoney() {
-            const receiverEmail = document.getElementById("receiver-email").value;
+            if (!currentUser) {
+                alert("请先登录！");
+                return;
+            }
+
+            const senderUID = currentUser.uid;  // 发送人 UID
+            const recipientEmail = document.getElementById("recipientEmail").value.trim();
             const amount = parseFloat(document.getElementById("amount").value);
 
-            if (!receiverEmail || isNaN(amount) || amount <= 0) {
-                alert("请输入正确的收款人邮箱和金额！");
+            if (!recipientEmail || isNaN(amount) || amount <= 0) {
+                alert("请输入有效的收款人邮箱和金额！");
                 return;
             }
 
             try {
-                // 获取当前用户的资金信息
-                const senderDocRef = doc(db, "users", currentUser.uid);
-                const senderDoc = await getDoc(senderDocRef);
+                // **查找收款人**
+                const usersRef = collection(db, "users");
+                const recipientQuery = query(usersRef, where("Email", "==", recipientEmail));
+                const recipientSnap = await getDocs(recipientQuery);
 
-                if (!senderDoc.exists()) {
-                    alert("发送者信息未找到！");
-                    return;
-                }
-
-                let senderFunds = senderDoc.data().Funds;
-
-                if (senderFunds < amount) {
-                    alert("余额不足！");
-                    return;
-                }
-
-                // 查找收款人
-                const usersRef = doc(db, "users", currentUser.uid);
-                const usersSnapshot = await getDoc(usersRef);
-                let receiverUid = null;
-
-                if (usersSnapshot.exists()) {
-                    receiverUid = Object.keys(usersSnapshot.data()).find(uid => usersSnapshot.data()[uid].Email === receiverEmail);
-                }
-
-                if (!receiverUid) {
+                if (recipientSnap.empty) {
                     alert("收款人未找到！");
                     return;
                 }
 
-                const receiverDocRef = doc(db, "users", receiverUid);
-                const receiverDoc = await getDoc(receiverDocRef);
+                let recipientUID;
+                let recipientData;
 
-                if (!receiverDoc.exists()) {
-                    alert("收款人信息未找到！");
+                recipientSnap.forEach(doc => {
+                    recipientUID = doc.id;
+                    recipientData = doc.data();
+                });
+
+                if (!recipientUID) {
+                    alert("收款人数据错误！");
                     return;
                 }
 
-                let receiverFunds = receiverDoc.data().Funds;
+                // **获取当前用户资金**
+                const senderRef = doc(db, "users", senderUID);
+                const senderSnap = await getDoc(senderRef);
 
-                // 更新 Firestore 余额
-                await updateDoc(senderDocRef, { Funds: senderFunds - amount });
-                await updateDoc(receiverDocRef, { Funds: receiverFunds + amount });
+                if (!senderSnap.exists()) {
+                    alert("当前用户数据未找到！");
+                    return;
+                }
 
-                alert("转账成功！");
-                window.location.href = "dashboard.html";
+                const senderData = senderSnap.data();
+
+                if (senderData.Funds < amount) {
+                    alert("余额不足！");
+                    return;
+                }
+
+                // **执行转账**
+                await updateDoc(senderRef, {
+                    Funds: senderData.Funds - amount
+                });
+
+                await updateDoc(doc(db, "users", recipientUID), {
+                    Funds: recipientData.Funds + amount
+                });
+
+                alert(`成功转账 ${amount} 给 ${recipientEmail}！`);
+                window.location.href = "dashboard.html"; // 转账成功后跳转
             } catch (error) {
-                console.error("转账失败:", error);
-                alert("转账失败，请重试！");
+                console.error("转账失败：", error);
+                alert("转账失败：" + error.message);
             }
         }
 
-        // 绑定按钮点击事件
+        // **绑定按钮事件**
         window.onload = () => {
-            document.getElementById("transfer-btn").addEventListener("click", transferMoney);
+            document.getElementById("transferBtn").addEventListener("click", transferMoney);
+            document.getElementById("backToDashboard").addEventListener("click", () => {
+                window.location.href = "dashboard.html";
+            });
         };
-
     </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        input, button {
+            display: block;
+            margin: 10px auto;
+            padding: 10px;
+            font-size: 16px;
+        }
+    </style>
 </head>
 <body>
     <h1>转账</h1>
-    <p id="user-email">当前用户: 加载中...</p>
+    <p id="userEmail">当前用户: 未登录</p>
 
-    <label for="receiver-email">收款人邮箱:</label>
-    <input type="email" id="receiver-email" required>
+    <label for="recipientEmail">收款人邮箱:</label>
+    <input type="email" id="recipientEmail" placeholder="输入收款人邮箱" required>
 
-    <label for="amount">金额:</label>
-    <input type="number" id="amount" required>
+    <label for="amount">转账金额:</label>
+    <input type="number" id="amount" placeholder="输入金额" required>
 
-    <button id="transfer-btn">确认转账</button>
-    <br><br>
-    <a href="dashboard.html">返回</a>
+    <button id="transferBtn">确认转账</button>
+    <button id="backToDashboard">返回首页</button>
 </body>
 </html>
