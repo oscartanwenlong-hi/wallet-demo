@@ -1,26 +1,93 @@
-<script type="module">
-    // 导入 Firebase 模块，包括 Google 登录及 Firestore 写入所需方法
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js";
-    import { 
-        getFirestore, doc, getDoc, setDoc, updateDoc, query, where, getDocs, collection, addDoc, deleteDoc
-    } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-firestore.js";
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户登录</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 300px;
+        }
+        input {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #googleLogin {
+            background: #db4437;
+        }
+        #googleLogin:hover {
+            background: #b23121;
+        }
+        #message {
+            margin-top: 10px;
+            color: red;
+        }
+    </style>
+</head>
+<body>
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyB-sxwqPjcQp2kR3fubkhw7xg8m2FztgcA",
-        authDomain: "wallet-demo-74c8b.firebaseapp.com",
-        projectId: "wallet-demo-74c8b",
-        storageBucket: "wallet-demo-74c8b.firebasestorage.app",
-        messagingSenderId: "727957421920",
-        appId: "1:727957421920:web:b5bff9853e2e8510db2805"
-    };
+    <div class="container">
+        <h2>用户登录</h2>
+        <input type="email" id="email" placeholder="邮箱">
+        <input type="password" id="password" placeholder="密码">
+        <button id="loginButton">登录</button>
+        <button id="resetPassword">忘记密码？</button>
+        <button id="googleLogin">使用 Google 登录</button>
+        <p id="message"></p>
+    </div>
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    <script type="module">
+        // 导入 Firebase 相关功能
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js";
+        import { 
+            getFirestore, doc, getDoc, setDoc
+        } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-firestore.js";
 
-    document.addEventListener("DOMContentLoaded", () => {
-        // 邮箱/密码登录事件
+        // Firebase 配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyB-sxwqPjcQp2kR3fubkhw7xg8m2FztgcA",
+            authDomain: "wallet-demo-74c8b.firebaseapp.com",
+            projectId: "wallet-demo-74c8b",
+            storageBucket: "wallet-demo-74c8b.firebasestorage.app",
+            messagingSenderId: "727957421920",
+            appId: "1:727957421920:web:b5bff9853e2e8510db2805"
+        };
+
+        // 初始化 Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
         document.getElementById("loginButton").addEventListener("click", function() {
             const email = document.getElementById("email").value;
             const password = document.getElementById("password").value;
@@ -32,129 +99,99 @@
                 })
                 .catch((error) => {
                     document.getElementById("message").textContent = `❌ 登录失败: ${error.message}`;
-                    document.getElementById("message").style.color = "red";
                 });
         });
 
-        // 跳转到重置密码页面
         document.getElementById("resetPassword").addEventListener("click", function() {
             window.location.href = "reset.html";
         });
 
-        // 动态创建 Google 登录按钮
-        const container = document.querySelector('.container');
-        const googleButton = document.createElement('button');
-        googleButton.id = 'googleLogin';
-        googleButton.textContent = '使用 Google 登录';
-        container.appendChild(googleButton);
-
-        // Google 登录事件，登录后检查 Firestore 中是否存在该用户记录
-        googleButton.addEventListener("click", async () => {
+        document.getElementById("googleLogin").addEventListener("click", async () => {
             const provider = new GoogleAuthProvider();
             try {
                 const result = await signInWithPopup(auth, provider);
                 const user = result.user;
                 const userDocRef = doc(db, "users", user.uid);
                 const userDocSnap = await getDoc(userDocRef);
+
                 if (userDocSnap.exists()) {
-                    // 如果记录存在，则直接跳转到 dashboard 页面
                     window.location.href = `dashboard.html?email=${encodeURIComponent(user.email)}`;
                 } else {
-                    // 如果记录不存在，则弹出注册表单，让用户填写 Email 和 姓名，并将 Funds 初始化为 0
                     showRegistrationModal(user);
                 }
             } catch (error) {
                 document.getElementById("message").textContent = `❌ Google 登录失败: ${error.message}`;
-                document.getElementById("message").style.color = "red";
             }
         });
-    });
 
-    // 弹出注册表单的函数：要求用户填写 Email 和 姓名，然后将用户记录写入 Firestore，Funds 设为 0
-    async function showRegistrationModal(user) {
-        // 创建全屏模态遮罩
-        const modal = document.createElement("div");
-        modal.style.position = "fixed";
-        modal.style.top = "0";
-        modal.style.left = "0";
-        modal.style.width = "100%";
-        modal.style.height = "100%";
-        modal.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
-        modal.style.display = "flex";
-        modal.style.justifyContent = "center";
-        modal.style.alignItems = "center";
-        modal.style.zIndex = "1000";
-        
-        // 创建模态内容区域
-        const modalContent = document.createElement("div");
-        modalContent.style.backgroundColor = "white";
-        modalContent.style.padding = "20px";
-        modalContent.style.borderRadius = "10px";
-        modalContent.style.textAlign = "center";
-        modalContent.style.maxWidth = "400px";
-        modalContent.style.width = "80%";
-        
-        const title = document.createElement("h2");
-        title.innerText = "请完善注册信息";
-        modalContent.appendChild(title);
-        
-        // Email 输入框（预填用户的 Google 邮箱）
-        const emailLabel = document.createElement("label");
-        emailLabel.innerText = "邮箱:";
-        modalContent.appendChild(emailLabel);
-        
-        const emailInput = document.createElement("input");
-        emailInput.type = "email";
-        emailInput.value = user.email;
-        emailInput.required = true;
-        emailInput.style.width = "100%";
-        emailInput.style.marginBottom = "10px";
-        modalContent.appendChild(emailInput);
-        
-        // 姓名输入框
-        const nameLabel = document.createElement("label");
-        nameLabel.innerText = "姓名:";
-        modalContent.appendChild(nameLabel);
-        
-        const nameInput = document.createElement("input");
-        nameInput.type = "text";
-        nameInput.placeholder = "请输入姓名";
-        nameInput.required = true;
-        nameInput.style.width = "100%";
-        nameInput.style.marginBottom = "10px";
-        modalContent.appendChild(nameInput);
-        
-        // 提交按钮
-        const submitButton = document.createElement("button");
-        submitButton.innerText = "注册";
-        submitButton.style.padding = "10px 20px";
-        submitButton.style.marginTop = "10px";
-        modalContent.appendChild(submitButton);
-        
-        modal.appendChild(modalContent);
-        document.body.appendChild(modal);
-        
-        // 绑定提交按钮事件
-        submitButton.addEventListener("click", async () => {
-            const emailVal = emailInput.value.trim();
-            const nameVal = nameInput.value.trim();
-            if (!emailVal || !nameVal) {
-                alert("请填写所有字段！");
-                return;
-            }
-            try {
-                // 将用户数据写入 Firestore，Funds 初始为 0
-                await setDoc(doc(db, "users", user.uid), {
-                    Email: emailVal,
-                    name: nameVal,
-                    Funds: 0
-                });
-                // 删除模态窗口并跳转到 dashboard
-                document.body.removeChild(modal);
-                window.location.href = `dashboard.html?email=${encodeURIComponent(emailVal)}`;
-            } catch (error) {
-                alert("注册失败：" + error.message);
-            }
-        });
-    }
-</script>
+        async function showRegistrationModal(user) {
+            const modal = document.createElement("div");
+            modal.style.position = "fixed";
+            modal.style.top = "0";
+            modal.style.left = "0";
+            modal.style.width = "100%";
+            modal.style.height = "100%";
+            modal.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
+            modal.style.display = "flex";
+            modal.style.justifyContent = "center";
+            modal.style.alignItems = "center";
+            modal.style.zIndex = "1000";
+
+            const modalContent = document.createElement("div");
+            modalContent.style.backgroundColor = "white";
+            modalContent.style.padding = "20px";
+            modalContent.style.borderRadius = "10px";
+            modalContent.style.textAlign = "center";
+            modalContent.style.width = "300px";
+
+            const title = document.createElement("h2");
+            title.innerText = "完善注册信息";
+            modalContent.appendChild(title);
+
+            const emailInput = document.createElement("input");
+            emailInput.type = "email";
+            emailInput.value = user.email;
+            emailInput.required = true;
+            emailInput.style.width = "100%";
+            emailInput.style.marginBottom = "10px";
+            modalContent.appendChild(emailInput);
+
+            const nameInput = document.createElement("input");
+            nameInput.type = "text";
+            nameInput.placeholder = "请输入姓名";
+            nameInput.required = true;
+            nameInput.style.width = "100%";
+            nameInput.style.marginBottom = "10px";
+            modalContent.appendChild(nameInput);
+
+            const submitButton = document.createElement("button");
+            submitButton.innerText = "注册";
+            submitButton.style.padding = "10px 20px";
+            modalContent.appendChild(submitButton);
+
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+
+            submitButton.addEventListener("click", async () => {
+                const nameVal = nameInput.value.trim();
+                if (!nameVal) {
+                    alert("请填写姓名！");
+                    return;
+                }
+                try {
+                    await setDoc(doc(db, "users", user.uid), {
+                        Email: user.email,
+                        Name: nameVal,
+                        Funds: 0
+                    });
+                    document.body.removeChild(modal);
+                    window.location.href = `dashboard.html?email=${encodeURIComponent(user.email)}`;
+                } catch (error) {
+                    alert("注册失败：" + error.message);
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>
