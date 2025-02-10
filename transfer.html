@@ -96,16 +96,32 @@
                     return;
                 }
 
-                await updateDoc(senderRef, {
-                    Funds: senderData.Funds - amount
+                // 显示弹出框确认转账信息
+                document.getElementById("confirmationRecipient").innerText = recipientData.name;
+                document.getElementById("confirmationEmail").innerText = recipientEmail;
+                document.getElementById("confirmationAmount").innerText = `$${amount.toFixed(2)}`;
+
+                document.getElementById("confirmationModal").style.display = "block";
+
+                // 处理确认按钮
+                document.getElementById("confirmTransfer").addEventListener("click", async () => {
+                    await updateDoc(senderRef, {
+                        Funds: senderData.Funds - amount
+                    });
+
+                    await updateDoc(doc(db, "users", recipientUID), {
+                        Funds: recipientData.Funds + amount
+                    });
+
+                    alert(`成功转账 $${amount} 给 ${recipientEmail}！`);
+                    window.location.href = "dashboard.html";
                 });
 
-                await updateDoc(doc(db, "users", recipientUID), {
-                    Funds: recipientData.Funds + amount
+                // 关闭弹出框
+                document.getElementById("cancelTransfer").addEventListener("click", () => {
+                    document.getElementById("confirmationModal").style.display = "none";
                 });
 
-                alert(`成功转账 $${amount} 给 ${recipientEmail}！`);
-                window.location.href = "dashboard.html";
             } catch (error) {
                 console.error("转账失败：", error);
                 alert("转账失败：" + error.message);
@@ -191,6 +207,59 @@
             background: #5563c1;
         }
 
+        /* 弹出框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 400px;
+            width: 80%;
+        }
+
+        .modal h2 {
+            margin-bottom: 15px;
+        }
+
+        .modal p {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .modal button {
+            background: #4CAF50;
+            color: white;
+            font-size: 16px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+
+        .modal button:hover {
+            background: #45a049;
+        }
+
+        .cancel-btn {
+            background: #f44336;
+        }
+
+        .cancel-btn:hover {
+            background: #e53935;
+        }
     </style>
 </head>
 <body>
@@ -208,7 +277,20 @@
 
         <div class="button-group">
             <button id="transferBtn">✅ 确认转账</button>
-            <button id="backToDashboard">🏠 返回首页</button>
+            <button id="backToDashboard">⬅ 返回仪表盘</button>
+        </div>
+    </div>
+
+    <!-- 📢 转账确认弹出框 -->
+    <div id="confirmationModal" class="modal">
+        <div class="modal-content">
+            <h2>确认转账</h2>
+            <p><strong>收款人:</strong> <span id="confirmationRecipient"></span></p>
+            <p><strong>邮箱:</strong> <span id="confirmationEmail"></span></p>
+            <p><strong>金额:</strong> <span id="confirmationAmount"></span></p>
+
+            <button id="confirmTransfer">确认转账</button>
+            <button id="cancelTransfer" class="cancel-btn">取消</button>
         </div>
     </div>
 </body>
