@@ -1,135 +1,105 @@
-<!DOCTYPE html>
-<html lang="zh">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>电子邮件登录演示</title>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js";
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAuth, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyB-sxwqPjcQp2kR3fubkhw7xg8m2FztgcA",
-            authDomain: "wallet-demo-74c8b.firebaseapp.com",
-            projectId: "wallet-demo-74c8b",
-            storageBucket: "wallet-demo-74c8b.firebasestorage.app",
-            messagingSenderId: "727957421920",
-            appId: "1:727957421920:web:b5bff9853e2e8510db2805"
-        };
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyB-sxwqPjcQp2kR3fubkhw7xg8m2FztgcA",
+  authDomain: "wallet-demo-74c8b.firebaseapp.com",
+  projectId: "wallet-demo-74c8b",
+  storageBucket: "wallet-demo-74c8b.firebasestorage.app",
+  messagingSenderId: "727957421920",
+  appId: "1:727957421920:web:b5bff9853e2e8510db2805"
+};
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth();
+const db = getFirestore();
 
-        document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById("loginButton").addEventListener("click", function() {
-                const email = document.getElementById("email").value;
-                const password = document.getElementById("password").value;
+// 获取设备唯一标识符
+function generateDeviceID() {
+  return localStorage.getItem("deviceID") || generateUUID();
+}
 
-                signInWithEmailAndPassword(auth, email, password)
-                    .then((userCredential) => {
-                        const user = userCredential.user;
-                        window.location.href = `dashboard.html?email=${encodeURIComponent(user.email)}`;
-                    })
-                    .catch((error) => {
-                        document.getElementById("message").textContent = `❌ 登录失败: ${error.message}`;
-                        document.getElementById("message").style.color = "red";
-                    });
-            });
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0,
+      v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
 
-            // 跳转到重置密码页面
-            document.getElementById("resetPassword").addEventListener("click", function() {
-                window.location.href = "reset.html";
-            });
-        });
-    </script>
+// 登录表单提交
+document.getElementById("loginForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
 
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
-        body {
-            font-family: Arial, sans-serif;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-        }
+  try {
+    await login(email, password);
+  } catch (error) {
+    document.getElementById("errorMessage").textContent = error.message;
+  }
+});
 
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-            color: black;
-        }
+// 用户登录逻辑
+async function login(email, password) {
+  const deviceID = generateDeviceID();
 
-        h2 {
-            margin-bottom: 20px;
-        }
+  try {
+    // 用户登录
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
 
-        input {
-            padding: 12px;
-            margin: 10px 0;
-            font-size: 16px;
-            width: 100%;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-        }
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
 
-        button {
-            padding: 12px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            transition: 0.3s;
-            width: 100%;
-        }
+    if (!userSnap.exists()) {
+      throw new Error("用户不存在");
+    }
 
-        button:hover {
-            background: #5563c1;
-        }
+    const userData = userSnap.data();
 
-        #resetPassword {
-            background: none;
-            color: #667eea;
-            border: none;
-            cursor: pointer;
-            margin-top: 10px;
-            text-decoration: underline;
-            font-size: 14px;
-        }
+    // 如果设备ID不同，强制登出旧设备
+    if (userData.deviceID && userData.deviceID !== deviceID) {
+      await forceLogoutOldDevice(userData.deviceID);
+    }
 
-        #resetPassword:hover {
-            color: #5563c1;
-        }
+    // 更新为新设备的deviceID
+    await updateDoc(userRef, {
+      deviceID: deviceID
+    });
 
-        #message {
-            margin-top: 15px;
-            font-size: 16px;
-            color: red;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h2>使用电子邮件和密码登录</h2>
-        <input type="email" id="email" placeholder="请输入电子邮件" required>
-        <input type="password" id="password" placeholder="请输入密码" required>
-        <br>
-        <button id="loginButton">登录</button>
-        <button id="resetPassword">忘记密码？</button>
-        <p id="message"></p>
-    </div>
-</body>
-</html>
+    alert("登录成功！");
+    window.location.href = "dashboard.html";  // 跳转到主页面
+
+  } catch (error) {
+    throw new Error(error.message);
+  }
+}
+
+// 强制登出旧设备
+async function forceLogoutOldDevice(oldDeviceID) {
+  console.log(`旧设备ID ${oldDeviceID} 将被登出。`);
+
+  const user = auth.currentUser;
+  if (user) {
+    const userRef = doc(db, "users", user.uid);
+    await updateDoc(userRef, {
+      deviceID: null  // 清除设备ID，旧设备会被强制退出
+    });
+  }
+
+  await signOut(auth);  // 退出当前设备
+  alert("您已在其他设备登录，请退出旧设备后继续。");
+  window.location.href = "index.html";  // 跳转到登录页面
+}
+
+// 在首次登录时生成并存储设备ID
+if (!localStorage.getItem("deviceID")) {
+  const deviceID = generateUUID();
+  localStorage.setItem("deviceID", deviceID);
+}
