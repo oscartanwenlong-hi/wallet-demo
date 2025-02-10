@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>用户主页</title>
+    <title>Dashboard</title>
     <script type="module">
+        // Firebase 配置
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
-        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -18,54 +19,50 @@
             appId: "1:727957421920:web:b5bff9853e2e8510db2805"
         };
 
+        // 初始化 Firebase
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        const auth = getAuth();
+        const db = getFirestore();
 
-        document.addEventListener("DOMContentLoaded", () => {
-            // 监听用户是否登录
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    const userId = user.uid;
-                    document.getElementById("userId").textContent = `UID: ${userId}`;
+        // 监听用户是否登录
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                document.getElementById("user-email").innerText = user.email;
 
-                    // 获取 Firestore 用户数据
-                    const userRef = doc(db, "users", userId);
-                    const userSnap = await getDoc(userRef);
-
-                    if (userSnap.exists()) {
-                        const userData = userSnap.data();
-                        document.getElementById("userName").textContent = `欢迎, ${userData.name}`;
-                        document.getElementById("userFunds").textContent = `余额: $${userData.Funds}`;
-                    } else {
-                        document.getElementById("userName").textContent = "用户数据未找到";
-                        document.getElementById("userFunds").textContent = "";
-                    }
+                // 获取 Firestore 里的用户信息
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    document.getElementById("user-name").innerText = userDoc.data().name;
+                    document.getElementById("user-funds").innerText = `余额: $${userDoc.data().Funds}`;
                 } else {
-                    window.location.href = "index.html"; // 未登录，跳转回登录页面
+                    document.getElementById("user-funds").innerText = "用户信息未找到";
                 }
-            });
+            } else {
+                window.location.href = "index.html"; // 未登录就跳回登录页面
+            }
+        });
 
-            // 退出登录
-            document.getElementById("logoutButton").addEventListener("click", () => {
-                signOut(auth).then(() => {
-                    window.location.href = "index.html";
-                }).catch((error) => {
-                    alert("❌ 退出失败：" + error.message);
-                });
+        // 登出功能
+        document.getElementById("logout-btn").addEventListener("click", () => {
+            signOut(auth).then(() => {
+                window.location.href = "index.html";
             });
         });
+
+        // 跳转到转账页面
+        document.getElementById("transfer-btn").addEventListener("click", () => {
+            window.location.href = "transfer.html";
+        });
+
     </script>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; margin-top: 20px; }
-    </style>
 </head>
 <body>
-    <h2>用户主页</h2>
-    <p id="userId">正在获取 UID...</p>
-    <p id="userName">正在加载用户信息...</p>
-    <p id="userFunds"></p>
-    <button id="logoutButton">退出登录</button>
+    <h1>欢迎来到电子钱包 Dashboard</h1>
+    <p><strong>邮箱:</strong> <span id="user-email"></span></p>
+    <p><strong>姓名:</strong> <span id="user-name"></span></p>
+    <p><strong>余额:</strong> <span id="user-funds"></span></p>
+
+    <button id="transfer-btn">转账</button>
+    <button id="logout-btn">登出</button>
 </body>
 </html>
