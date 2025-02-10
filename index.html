@@ -181,7 +181,7 @@
                 try {
                     await setDoc(doc(db, "users", user.uid), {
                         Email: user.email,
-                        Name: nameVal,
+                        name: nameVal,
                         Funds: 0
                     });
                     document.body.removeChild(modal);
