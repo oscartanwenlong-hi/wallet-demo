@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHub 登录演示</title>
+    <title>电子邮件登录演示</title>
     <script type="module">
         // 导入 Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GithubAuthProvider } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js";
 
         // 🔹 你的 Firebase 配置
         const firebaseConfig = {
@@ -23,15 +23,17 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
-        // GitHub 登录逻辑
+        // 登录逻辑
         document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById("githubLogin").addEventListener("click", function() {
-                const provider = new GithubAuthProvider();
+            document.getElementById("loginButton").addEventListener("click", function() {
+                const email = document.getElementById("email").value;
+                const password = document.getElementById("password").value;
 
-                signInWithPopup(auth, provider)
-                    .then((result) => {
-                        const user = result.user;
-                        document.getElementById("message").textContent = `✅ 登录成功！欢迎, ${user.displayName}`;
+                // 使用 email 和 password 登录
+                signInWithEmailAndPassword(auth, email, password)
+                    .then((userCredential) => {
+                        const user = userCredential.user;
+                        document.getElementById("message").textContent = `✅ 登录成功！欢迎, ${user.email}`;
                         document.getElementById("message").style.color = "green";
                     })
                     .catch((error) => {
@@ -47,6 +49,12 @@
             text-align: center;
             margin: 50px;
         }
+        input {
+            padding: 10px;
+            margin: 10px;
+            font-size: 16px;
+            width: 80%;
+        }
         button {
             padding: 10px 20px;
             font-size: 16px;
@@ -61,8 +69,12 @@
 </head>
 <body>
 
-    <h2>使用 GitHub 登录</h2>
-    <button id="githubLogin">使用 GitHub 登录</button>
+    <h2>使用电子邮件和密码登录</h2>
+    
+    <input type="email" id="email" placeholder="请输入电子邮件" required>
+    <input type="password" id="password" placeholder="请输入密码" required>
+    <br>
+    <button id="loginButton">登录</button>
     <p id="message"></p>
 
 </body>
