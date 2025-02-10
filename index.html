@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>登录 - Wallet Demo</title>
-    
-    <!-- Firebase -->
+    <title>电子邮件登录演示</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js";
@@ -37,87 +35,92 @@
                         document.getElementById("message").style.color = "red";
                     });
             });
+
+            // 跳转到重置密码页面
+            document.getElementById("resetPassword").addEventListener("click", function() {
+                window.location.href = "reset.html";
+            });
         });
     </script>
 
-    <!-- 🌈 现代化 CSS 设计 -->
     <style>
-        /* 🌟 渐变背景 */
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
             background: linear-gradient(135deg, #667eea, #764ba2);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
+            color: white;
         }
 
-        /* 📦 登录卡片 */
-        .login-container {
+        .container {
             background: white;
             padding: 30px;
-            border-radius: 10px;
+            border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             text-align: center;
-            width: 90%;
             max-width: 400px;
+            margin: auto;
+            color: black;
         }
 
         h2 {
             margin-bottom: 20px;
-            color: #333;
         }
 
-        /* 📝 输入框样式 */
         input {
-            width: 100%;
             padding: 12px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+            margin: 10px;
             font-size: 16px;
-            transition: 0.3s;
+            width: 90%;
+            border: 1px solid #ccc;
+            border-radius: 6px;
         }
 
-        input:focus {
-            border-color: #667eea;
-            outline: none;
-            box-shadow: 0 0 8px rgba(102, 126, 234, 0.5);
-        }
-
-        /* 🔘 按钮样式 */
         button {
+            padding: 12px 20px;
+            font-size: 16px;
+            cursor: pointer;
             background: #667eea;
             color: white;
-            padding: 12px;
-            width: 100%;
             border: none;
-            border-radius: 5px;
-            font-size: 18px;
-            cursor: pointer;
+            border-radius: 6px;
             transition: 0.3s;
+            width: 100%;
         }
 
         button:hover {
             background: #5563c1;
         }
 
-        /* ⚠️ 错误消息 */
+        #resetPassword {
+            background: none;
+            color: #667eea;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+            text-decoration: underline;
+            font-size: 14px;
+        }
+
+        #resetPassword:hover {
+            color: #5563c1;
+        }
+
         #message {
-            margin-top: 15px;
-            font-size: 16px;
+            margin-top: 20px;
+            font-size: 18px;
             color: red;
         }
     </style>
 </head>
 <body>
-    <!-- 📦 登录卡片 -->
-    <div class="login-container">
-        <h2>登录 Wallet</h2>
+    <div class="container">
+        <h2>使用电子邮件和密码登录</h2>
         <input type="email" id="email" placeholder="请输入电子邮件" required>
         <input type="password" id="password" placeholder="请输入密码" required>
+        <br>
         <button id="loginButton">登录</button>
+        <button id="resetPassword">忘记密码？</button>
         <p id="message"></p>
     </div>
 </body>
