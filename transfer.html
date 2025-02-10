@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>转账 - Wallet Demo</title>
+
+    <!-- Firebase SDK -->
     <script type="module">
-        // **Firebase SDK**
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
         import { getFirestore, doc, getDoc, updateDoc, query, where, getDocs, collection } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js";
 
-        // **Firebase 配置**
         const firebaseConfig = {
             apiKey: "AIzaSyB-sxwqPjcQp2kR3fubkhw7xg8m2FztgcA",
             authDomain: "wallet-demo-74c8b.firebaseapp.com",
@@ -20,32 +20,36 @@
             appId: "1:727957421920:web:b5bff9853e2e8510db2805"
         };
 
-        // **初始化 Firebase**
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
 
         let currentUser = null;
 
-        // **检查用户是否已登录**
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
                 document.getElementById("userEmail").innerText = `当前用户: ${user.email}`;
+                
+                const userRef = doc(db, "users", user.uid);
+                const userSnap = await getDoc(userRef);
+                
+                if (userSnap.exists()) {
+                    document.getElementById("userFunds").innerText = `余额: $${userSnap.data().Funds.toFixed(2)}`;
+                }
             } else {
                 alert("请先登录！");
-                window.location.href = "login.html"; // 跳转到登录页
+                window.location.href = "index.html";
             }
         });
 
-        // **转账函数**
         async function transferMoney() {
             if (!currentUser) {
                 alert("请先登录！");
                 return;
             }
 
-            const senderUID = currentUser.uid;  // 发送人 UID
+            const senderUID = currentUser.uid;
             const recipientEmail = document.getElementById("recipientEmail").value.trim();
             const amount = parseFloat(document.getElementById("amount").value);
 
@@ -55,7 +59,6 @@
             }
 
             try {
-                // **查找收款人**
                 const usersRef = collection(db, "users");
                 const recipientQuery = query(usersRef, where("Email", "==", recipientEmail));
                 const recipientSnap = await getDocs(recipientQuery);
@@ -78,7 +81,6 @@
                     return;
                 }
 
-                // **获取当前用户资金**
                 const senderRef = doc(db, "users", senderUID);
                 const senderSnap = await getDoc(senderRef);
 
@@ -94,7 +96,6 @@
                     return;
                 }
 
-                // **执行转账**
                 await updateDoc(senderRef, {
                     Funds: senderData.Funds - amount
                 });
@@ -103,15 +104,14 @@
                     Funds: recipientData.Funds + amount
                 });
 
-                alert(`成功转账 ${amount} 给 ${recipientEmail}！`);
-                window.location.href = "dashboard.html"; // 转账成功后跳转
+                alert(`成功转账 $${amount} 给 ${recipientEmail}！`);
+                window.location.href = "dashboard.html";
             } catch (error) {
                 console.error("转账失败：", error);
                 alert("转账失败：" + error.message);
             }
         }
 
-        // **绑定按钮事件**
         window.onload = () => {
             document.getElementById("transferBtn").addEventListener("click", transferMoney);
             document.getElementById("backToDashboard").addEventListener("click", () => {
@@ -119,31 +119,97 @@
             });
         };
     </script>
+
+    <!-- 🌈 现代化 CSS 设计 -->
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .transfer-container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             text-align: center;
-            padding: 20px;
+            width: 90%;
+            max-width: 400px;
         }
-        input, button {
-            display: block;
-            margin: 10px auto;
-            padding: 10px;
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .user-info {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        .balance {
+            font-size: 22px;
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 20px;
+        }
+
+        input {
+            width: 90%;
+            padding: 12px;
+            margin: 10px 0;
             font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            text-align: center;
         }
+
+        .button-group {
+            margin-top: 20px;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            width: 100%;
+            border: none;
+            border-radius: 6px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: 0.3s;
+            margin: 10px 0;
+        }
+
+        button:hover {
+            background: #5563c1;
+        }
+
     </style>
 </head>
 <body>
-    <h1>转账</h1>
-    <p id="userEmail">当前用户: 未登录</p>
+    <!-- 📦 转账界面 -->
+    <div class="transfer-container">
+        <h1>💸 转账</h1>
+        <p class="user-info"><strong>📧 邮箱:</strong> <span id="userEmail"></span></p>
+        <p class="balance"><strong>💰 余额:</strong> <span id="userFunds"></span></p>
 
-    <label for="recipientEmail">收款人邮箱:</label>
-    <input type="email" id="recipientEmail" placeholder="输入收款人邮箱" required>
+        <label for="recipientEmail">📩 收款人邮箱:</label>
+        <input type="email" id="recipientEmail" placeholder="输入收款人邮箱" required>
 
-    <label for="amount">转账金额:</label>
-    <input type="number" id="amount" placeholder="输入金额" required>
+        <label for="amount">💵 转账金额:</label>
+        <input type="number" id="amount" placeholder="输入金额" required>
 
-    <button id="transferBtn">确认转账</button>
-    <button id="backToDashboard">返回首页</button>
+        <div class="button-group">
+            <button id="transferBtn">✅ 确认转账</button>
+            <button id="backToDashboard">🏠 返回首页</button>
+        </div>
+    </div>
 </body>
 </html>
