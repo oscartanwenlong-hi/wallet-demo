@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>电子邮件登录演示</title>
+    <title>登录 - Wallet Demo</title>
+    
+    <!-- Firebase -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js";
@@ -28,7 +30,6 @@
                 signInWithEmailAndPassword(auth, email, password)
                     .then((userCredential) => {
                         const user = userCredential.user;
-                        // ✅ 登录成功后，跳转到 dashboard.html，并传递用户信息
                         window.location.href = `dashboard.html?email=${encodeURIComponent(user.email)}`;
                     })
                     .catch((error) => {
@@ -38,19 +39,86 @@
             });
         });
     </script>
+
+    <!-- 🌈 现代化 CSS 设计 -->
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
-        input { padding: 10px; margin: 10px; font-size: 16px; width: 80%; }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
-        #message { margin-top: 20px; font-size: 18px; color: red; }
+        /* 🌟 渐变背景 */
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        /* 📦 登录卡片 */
+        .login-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        /* 📝 输入框样式 */
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 8px rgba(102, 126, 234, 0.5);
+        }
+
+        /* 🔘 按钮样式 */
+        button {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            width: 100%;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #5563c1;
+        }
+
+        /* ⚠️ 错误消息 */
+        #message {
+            margin-top: 15px;
+            font-size: 16px;
+            color: red;
+        }
     </style>
 </head>
 <body>
-    <h2>使用电子邮件和密码登录</h2>
-    <input type="email" id="email" placeholder="请输入电子邮件" required>
-    <input type="password" id="password" placeholder="请输入密码" required>
-    <br>
-    <button id="loginButton">登录</button>
-    <p id="message"></p>
+    <!-- 📦 登录卡片 -->
+    <div class="login-container">
+        <h2>登录 Wallet</h2>
+        <input type="email" id="email" placeholder="请输入电子邮件" required>
+        <input type="password" id="password" placeholder="请输入密码" required>
+        <button id="loginButton">登录</button>
+        <p id="message"></p>
+    </div>
 </body>
 </html>
