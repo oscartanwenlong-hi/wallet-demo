@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub 登录演示</title>
+    <script type="module">
+        // 导入 Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GithubAuthProvider } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js";
+
+        // 🔹 你的 Firebase 配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyB-sxwqPjcQp2kR3fubkhw7xg8m2FztgcA",
+            authDomain: "wallet-demo-74c8b.firebaseapp.com",
+            projectId: "wallet-demo-74c8b",
+            storageBucket: "wallet-demo-74c8b.firebasestorage.app",
+            messagingSenderId: "727957421920",
+            appId: "1:727957421920:web:b5bff9853e2e8510db2805"
+        };
+
+        // 初始化 Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // GitHub 登录逻辑
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("githubLogin").addEventListener("click", function() {
+                const provider = new GithubAuthProvider();
+
+                signInWithPopup(auth, provider)
+                    .then((result) => {
+                        const user = result.user;
+                        document.getElementById("message").textContent = `✅ 登录成功！欢迎, ${user.displayName}`;
+                        document.getElementById("message").style.color = "green";
+                    })
+                    .catch((error) => {
+                        document.getElementById("message").textContent = `❌ 登录失败: ${error.message}`;
+                        document.getElementById("message").style.color = "red";
+                    });
+            });
+        });
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #message {
+            margin-top: 20px;
+            font-size: 18px;
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>使用 GitHub 登录</h2>
+    <button id="githubLogin">使用 GitHub 登录</button>
+    <p id="message"></p>
+
+</body>
+</html>
